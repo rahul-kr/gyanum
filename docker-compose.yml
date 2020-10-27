@@ -1,0 +1,52 @@
+version: "2.1"
+
+services:
+  myblogmysql:
+    image: mysql:5.7
+    container_name: myblogmysql
+    command: --default-authentication-plugin=mysql_native_password
+    restart: unless-stopped
+    env_file: ./conf/.env
+    ports:
+     - 3305:3306
+    volumes:
+      - ./db-data:/var/lib/mysql
+    networks:
+      - internal
+
+  myblog:
+    image: myblog
+    build: ./conf
+    container_name: myblog
+    depends_on:
+      - myblogmysql
+    restart: unless-stopped
+    networks:
+      - internal
+      - external
+    volumes:
+      - .:/var/www
+
+  myblognginx:
+    image: nginx:1.17.4-alpine
+    container_name: myblognginx
+    depends_on:
+      - myblog
+    restart: unless-stopped
+    ports:
+      - 8095:80
+    volumes:
+      - .:/var/www
+      - ./conf/nginx-conf:/etc/nginx/conf.d
+    networks:
+      - external
+
+networks:
+  external:
+    driver: bridge
+  internal:
+    driver: bridge
+
+volumes:
+  db-data:
+    
